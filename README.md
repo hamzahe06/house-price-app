@@ -74,6 +74,117 @@ house-price-project/
     └── .env.example
 ```
 
+## Full Setup (From Scratch)
+
+Follow these steps in order. Each step links to more detail further down in this README
+if you need it.
+
+### 1. Install prerequisites
+
+- Python 3.11+
+- Node.js 18+ and npm
+- Git
+- A Kaggle account (free) — needed to download the dataset
+- A GitHub account (free) — only needed if you plan to push your own changes
+
+### 2. Clone this repository
+
+```bash
+git clone https://github.com/hamzahe06/house-price-app.git
+cd house-price-app
+```
+
+### 3. Download the dataset
+
+```bash
+pip install kaggle
+```
+
+Get a Kaggle API token: Kaggle → your profile picture → **Settings** → **API** →
+**Create New Token**. Save the resulting credentials to `~/.kaggle/` (see Kaggle's own
+instructions shown at token creation — the exact steps can vary slightly by Kaggle's
+current UI).
+
+Then download the dataset directly into this project:
+
+```bash
+kaggle datasets download -d juhibhojani/house-price -p notebooks/data --unzip
+```
+
+You should end up with `notebooks/data/house_prices.csv` (~106MB).
+
+### 4. Train the model
+
+```bash
+cd notebooks
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS / Linux
+
+pip install jupyter pandas numpy scikit-learn matplotlib seaborn
+
+jupyter notebook
+```
+
+Open `house_price_model.ipynb` in the browser tab that opens, then **Kernel → Restart &
+Run All**. This will take a few minutes (training a RandomForest on ~180k rows). When it
+finishes, you'll have `house_price.pkl`, `locations.json`, and `categories.json` sitting
+in the `notebooks/` folder.
+
+### 5. Set up and run the backend
+
+```bash
+cd ../backend
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS / Linux
+
+pip install -r requirements.txt
+
+copy .env.example .env        # Windows
+# cp .env.example .env        # macOS / Linux
+
+copy ..\notebooks\house_price.pkl models\house_price.pkl     # Windows
+# cp ../notebooks/house_price.pkl models/house_price.pkl     # macOS / Linux
+copy ..\notebooks\locations.json .                           # Windows
+# cp ../notebooks/locations.json .                           # macOS / Linux
+copy ..\notebooks\categories.json .                          # Windows
+# cp ../notebooks/categories.json .                           # macOS / Linux
+
+uvicorn app.main:app --reload
+```
+
+Leave this running. Confirm it works by visiting `http://localhost:8000/docs` and trying
+`POST /predict`.
+
+### 6. Set up and run the frontend
+
+Open a **new** terminal (leave the backend running):
+
+```bash
+cd house-price-app/frontend
+npm install
+
+copy .env.example .env        # Windows
+# cp .env.example .env        # macOS / Linux
+
+copy ..\notebooks\locations.json public\      # Windows
+# cp ../notebooks/locations.json public/      # macOS / Linux
+copy ..\notebooks\categories.json public\     # Windows
+# cp ../notebooks/categories.json public/     # macOS / Linux
+
+npm run dev
+```
+
+### 7. Try it out
+
+Open `http://localhost:5173`, fill out the form, and submit. You should see a predicted
+price on the result page.
+
+---
+
+The sections below go into more detail on each part, for reference.
+
 ## Dataset
 
 **House Price** by Juhi Bhojani — https://www.kaggle.com/datasets/juhibhojani/house-price
@@ -82,26 +193,15 @@ Real property listings from India (~187,000 rows), including columns such as `Am
 `location`, `Carpet Area`, `Super Area`, `Floor`, `Furnishing`, `Bathroom`, `Balcony`,
 `Car Parking`, `Ownership`, `facing`, `overlooking`, `Status`, and more.
 
-The raw CSV is **not committed** to this repository (it's ~106MB). To get it:
-
-```bash
-pip install kaggle
-# Get your API token from Kaggle → Settings → API, save it to ~/.kaggle/
-kaggle datasets download -d juhibhojani/house-price -p notebooks/data --unzip
-```
-
-Or download manually from the dataset page and place the CSV in `notebooks/data/`.
+The raw CSV is **not committed** to this repository (it's ~106MB) — see step 3 of
+**Full Setup** above for how to download it.
 
 ## Model
 
 The trained model (`backend/models/house_price.pkl`, ~837MB) is **not committed** to this
-repository — GitHub isn't well suited for files this large. To get a working model:
-
-- **Option A (recommended): retrain it yourself.** Open `notebooks/house_price_model.ipynb`,
-  run all cells top-to-bottom (Kernel → Restart & Run All). This regenerates
-  `house_price.pkl` and `locations.json` / `categories.json` in the `notebooks/` folder;
-  copy `house_price.pkl` into `backend/models/`.
-- **Option B: request the pre-trained file** from the repository owner directly.
+repository — GitHub isn't well suited for files this large. See step 4 of **Full Setup**
+above to regenerate it yourself, or request the pre-trained file from the repository
+owner directly.
 
 ### Model Metrics (test set)
 
@@ -114,26 +214,10 @@ RandomForest was selected as the final model — it outperforms the linear basel
 every metric, since the relationship between property features and price is clearly
 non-linear (confirmed in the notebook's EDA).
 
-## Backend Setup
+## Backend Reference
 
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS / Linux
-
-pip install -r requirements.txt
-
-copy .env.example .env        # Windows
-# cp .env.example .env        # macOS / Linux
-
-# Make sure models/house_price.pkl exists (see "Model" section above)
-
-uvicorn app.main:app --reload
-```
-
-The API will be running at `http://localhost:8000`. Interactive docs (Swagger UI) are
-available at `http://localhost:8000/docs`.
+See step 5 of **Full Setup** above to run it. Once running, the API is at
+`http://localhost:8000`, with interactive docs (Swagger UI) at `http://localhost:8000/docs`.
 
 ### Environment Variables (backend/.env)
 
@@ -150,17 +234,10 @@ cd backend
 python -m pytest
 ```
 
-## Frontend Setup
+## Frontend Reference
 
-```bash
-cd frontend
-npm install
-copy .env.example .env        # Windows
-# cp .env.example .env        # macOS / Linux
-npm run dev
-```
-
-The app will be running at `http://localhost:5173`.
+See step 6 of **Full Setup** above to run it. Once running, the app is at
+`http://localhost:5173`.
 
 ### Environment Variables (frontend/.env)
 
@@ -253,12 +330,9 @@ curl -X POST http://localhost:8000/predict \
 
 ## Verifying From Scratch
 
-1. Clone this repository into a fresh folder.
-2. Follow **Backend Setup** above (including regenerating the model per the **Model**
-   section, since `.pkl` files aren't committed).
-3. Follow **Frontend Setup** above.
-4. With both servers running, open `http://localhost:5173`, fill out the form, and
-   confirm you get a predicted price back.
+This project has been verified by following the **Full Setup** section above, start to
+finish, in a completely fresh clone with no prior context. If you hit a step that's
+unclear or doesn't work as written, please open an issue.
 
 ## Notes on Data Cleaning Decisions
 
