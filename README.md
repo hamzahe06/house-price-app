@@ -243,7 +243,13 @@ curl -X POST http://localhost:8000/predict \
 
 ## Screenshots
 
-_TODO: add screenshots of the running app (form page and result page) here._
+**Form page:**
+
+![Form page](screenshots/form-page.png)
+
+**Result page:**
+
+![Result page](screenshots/result-page.png)
 
 ## Verifying From Scratch
 
